@@ -1,0 +1,10 @@
+body{background:#121212;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;text-align:center;margin:0;padding:20px}
+h1{font-size:20px;margin:0 0 10px}
+#calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:10px 12px}
+.day{border-radius:10px;padding:10px;background:#1e1e1e;min-height:68px;position:relative}
+.holiday{background:#ffd166;color:#1a1a1a;font-weight:700}
+.holiday-name{display:block;font-size:.75em;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shift{display:block;margin-top:6px;font-size:.85em;color:#cbd5e1}
+.sixth-day{box-shadow:0 0 0 2px #4da6ff inset}
+#holiday-list{margin-top:16px;font-size:.9em;color:#cbd5e1}
+.dow{opacity:.7;font-size:.85em;margin-bottom:-2px}
