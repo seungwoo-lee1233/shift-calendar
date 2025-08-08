@@ -1,0 +1,34 @@
+
+:root{
+  --bg:#0f141a; --card:#151b23; --text:#e6edf3; --muted:#9aa7b3; --border:#2a3542;
+  --오:#2ecc71; --후:#4aa3ff; --심:#b388ff; --휴:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Roboto,Apple SD Gothic Neo,Noto Sans KR,Segoe UI,Helvetica,Arial,sans-serif}
+.container{max-width:920px;margin:20px auto;padding:0 14px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-size:20px;margin:0}
+.badge{background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:10px;color:var(--muted)}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.controls button,.controls input{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:10px}
+.controls button{cursor:pointer}
+.controls input{min-width:180px}
+.legend{display:flex;gap:8px;color:var(--muted);font-size:12px;margin-top:8px;flex-wrap:wrap}
+.legend .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.calendar{margin-top:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cell,.dow{border:1px solid var(--border);border-radius:10px;padding:8px;text-align:right;min-height:74px;position:relative;background:#0d1117}
+.dow{text-align:center;color:var(--muted);background:transparent;border:none}
+.date{position:absolute;left:8px;top:6px;color:var(--muted);font-size:12px}
+.shift{position:absolute;right:8px;bottom:8px;font-weight:600}
+.오{background:color-mix(in oklab, var(--오) 18%, #0d1117); border-color:color-mix(in oklab, var(--오) 45%, var(--border));}
+.후{background:color-mix(in oklab, var(--후) 18%, #0d1117); border-color:color-mix(in oklab, var(--후) 45%, var(--border));}
+.심{background:color-mix(in oklab, var(--심) 18%, #0d1117); border-color:color-mix(in oklab, var(--심) 45%, var(--border));}
+.휴{background:color-mix(in oklab, var(--휴) 18%, #0d1117); border-color:color-mix(in oklab, var(--휴) 45%, var(--border));}
+.todayCell{outline:2px solid #ffd166; outline-offset:-2px}
+.footer{color:var(--muted);font-size:12px;margin-top:10px}
+.small{font-size:12px;color:var(--muted)}
+@media (max-width:640px){
+  .container{margin:10px auto}
+  h1{font-size:18px}
+}

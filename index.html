@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교대 캘린더</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <meta name="theme-color" content="#0f141a">
+  <script>
+    // Service Worker 등록
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    }
+  </script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>교대 캘린더 <span class="badge">오전5근 · 2휴 · 심야5근 · 2휴 · 오후5근 · 1휴</span></h1>
+    <div class="controls">
+      <button id="prev">◀ 이전달</button>
+      <button id="today" class="today">오늘</button>
+      <button id="next">다음달 ▶</button>
+      <input id="refDate" type="date" value="2025-08-08">
+      <select id="refShift">
+        <option value="오" selected>오전</option>
+        <option value="후">오후</option>
+        <option value="심">심야</option>
+        <option value="휴">휴무</option>
+      </select>
+      <select id="refOffset">
+        <option value="0">그 블록 1일째</option>
+        <option value="1" selected>그 블록 2일째</option>
+        <option value="2">그 블록 3일째</option>
+        <option value="3">그 블록 4일째</option>
+        <option value="4">그 블록 5일째</option>
+      </select>
+      <button id="apply">기준 반영</button>
+    </div>
+  </div>
+  <div class="small" id="refInfo"></div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--오)"></span>오전(06~14)</span>
+    <span><span class="dot" style="background:var(--후)"></span>오후(14~22)</span>
+    <span><span class="dot" style="background:var(--심)"></span>심야(22~06)</span>
+    <span><span class="dot" style="background:var(--휴)"></span>휴무</span>
+  </div>
+
+  <div class="calendar">
+    <div id="title" style="text-align:center;margin-bottom:8px;font-weight:600"></div>
+    <div class="grid" id="dows"></div>
+    <div class="grid" id="days"></div>
+  </div>
+
+  <div class="footer">
+    홈 화면에 추가하면 앱처럼 실행돼. iOS는 사파리 공유 버튼 → <b>홈 화면에 추가</b>, 안드로이드는 크롬 메뉴 → <b>홈 화면에 추가</b>.
+  </div>
+</div>
+
+<script>
+// === 패턴 설정 ===
+const cycle = [
+  ...Array(5).fill('오'),
+  ...Array(2).fill('휴'),
+  ...Array(5).fill('심'),
+  ...Array(2).fill('휴'),
+  ...Array(5).fill('후'),
+  ...Array(1).fill('휴'),
+];
+const CYCLE_LEN = cycle.length;
+
+// === 상태 ===
+let REF_DATE_STR = '2025-08-08'; // 2025-08-08
+let REF_SHIFT = '오';
+let REF_OFFSET_IN_PHASE = 1; // 오전 블록의 2일째
+
+// === 유틸 ===
+const dows = ['일','월','화','수','목','금','토'];
+const dowsEl = document.getElementById('dows');
+dowsEl.innerHTML = dows.map(d => `<div class="dow">${d}</div>`).join('');
+const titleEl = document.getElementById('title');
+const refInfoEl = document.getElementById('refInfo');
+const daysEl = document.getElementById('days');
+
+function ymd(d){
+  return d.toISOString().slice(0,10);
+}
+function diffDays(a,b){
+  const ms = 24*60*60*1000;
+  const aa = new Date(Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()));
+  const bb = new Date(Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()));
+  return Math.round((aa-bb)/ms);
+}
+function findTodayIndex(cycle, targetShift, offsetInPhase){
+  for (let i=0;i<cycle.length;i++){
+    if (cycle[i]!==targetShift) continue;
+    let start=i; while(start>0 && cycle[start-1]===targetShift) start--;
+    const offset=i-start;
+    if (offset===offsetInPhase) return i;
+  }
+  return 0;
+}
+
+let view = new Date(REF_DATE_STR);
+
+function render(year, month0){
+  const REF_INDEX = findTodayIndex(cycle, REF_SHIFT, REF_OFFSET_IN_PHASE);
+  const first = new Date(year, month0, 1);
+  const last = new Date(year, month0+1, 0);
+  titleEl.textContent = `${year}년 ${month0+1}월`;
+
+  const startBlank = first.getDay();
+  const totalCells = startBlank + last.getDate();
+  const rows = Math.ceil(totalCells/7)*7;
+
+  const refDate = new Date(REF_DATE_STR);
+  daysEl.innerHTML='';
+  for(let i=0;i<rows;i++){
+    const cell=document.createElement('div');
+    cell.className='cell';
+    const dayNum = i - startBlank + 1;
+    if(i>=startBlank && dayNum<=last.getDate()){
+      const d = new Date(year, month0, dayNum);
+      const ddiff = diffDays(d, refDate);
+      const idx = ((REF_INDEX + ddiff) % CYCLE_LEN + CYCLE_LEN) % CYCLE_LEN;
+      const shift = cycle[idx];
+      cell.classList.add(shift);
+      if(ymd(d)===ymd(refDate)) cell.classList.add('todayCell');
+      cell.innerHTML = `<div class="date">${dayNum}</div><div class="shift">${shift}</div>`;
+    }else{
+      cell.style.visibility='hidden';
+    }
+    daysEl.appendChild(cell);
+  }
+  refInfoEl.textContent = `기준일: ${REF_DATE_STR} · 그날 근무: '${REF_SHIFT}'의 ${REF_OFFSET_IN_PHASE+1}일째 · 사이클 길이: ${CYCLE_LEN}일`;
+}
+
+document.getElementById('prev').onclick=()=>{view.setMonth(view.getMonth()-1); render(view.getFullYear(), view.getMonth());};
+document.getElementById('next').onclick=()=>{view.setMonth(view.getMonth()+1); render(view.getFullYear(), view.getMonth());};
+document.getElementById('today').onclick=()=>{view=new Date(REF_DATE_STR); render(view.getFullYear(), view.getMonth());};
+
+// 기준 변경 UI
+document.getElementById('apply').onclick=()=>{
+  const rd = document.getElementById('refDate').value || '2025-08-08';
+  const rs = document.getElementById('refShift').value;
+  const ro = parseInt(document.getElementById('refOffset').value,10);
+  REF_DATE_STR = rd;
+  REF_SHIFT = rs;
+  REF_OFFSET_IN_PHASE = ro;
+  view = new Date(REF_DATE_STR);
+  render(view.getFullYear(), view.getMonth());
+  // 저장
+  localStorage.setItem('shiftCfg', JSON.stringify({REF_DATE_STR, REF_SHIFT, REF_OFFSET_IN_PHASE}));
+};
+
+// 저장된 설정 불러오기
+(function(){
+  try{
+    const raw = localStorage.getItem('shiftCfg');
+    if(raw){
+      const cfg = JSON.parse(raw);
+      if(cfg.REF_DATE_STR) document.getElementById('refDate').value = REF_DATE_STR = cfg.REF_DATE_STR;
+      if(cfg.REF_SHIFT) document.getElementById('refShift').value = REF_SHIFT = cfg.REF_SHIFT;
+      if(typeof cfg.REF_OFFSET_IN_PHASE==='number') document.getElementById('refOffset').value = REF_OFFSET_IN_PHASE = cfg.REF_OFFSET_IN_PHASE;
+      view=new Date(REF_DATE_STR);
+    }
+  }catch(e){}
+})();
+
+render(view.getFullYear(), view.getMonth());
+</script>
+</body>
+</html>
