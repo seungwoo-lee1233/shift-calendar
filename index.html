@@ -4,20 +4,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>교대 캘린더+</title>
+  <title>교대 캘린더+ v5</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <meta name="theme-color" content="#0b1118">
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw-v4.js'));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw-v5.js'));
     }
   </script>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>교대 캘린더+ <span class="badge">오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴</span></h1>
+    <h1>교대 캘린더+ v5 <span class="badge">오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴</span></h1>
     <div class="controls">
       <button id="prev">◀ 이전달</button>
       <button id="today" class="today">오늘</button>
