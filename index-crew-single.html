@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교대 근무 캘린더 (단일파일 v4.2)</title>
+  <style>*{box-sizing:border-box}
+:root{--bg:#0f1318;--panel:#151b22;--muted:#9fb0c3;--text:#e9f0f7;--morning:#44c08a;--evening:#5aa2ff;--night:#b385ff;--off:#495463;--holiday:#ffd166;--sixth:#4da6ff;--today:#fff}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:18px}
+.top h1{margin:0 0 8px 0;font-size:22px}
+.controls{display:flex;gap:8px;margin:6px 0 10px 0}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+label{color:var(--muted);font-size:13px}
+select{padding:8px 10px;border-radius:10px;background:#1b232c;color:var(--text);border:1px solid #2b3440}
+button{padding:10px 12px;border:1px solid #2b3440;border-radius:10px;background:#1b232c;color:var(--text);font-weight:600}
+button.primary{background:#2a84ff;border-color:#2a84ff;color:#fff}
+.subtitle{opacity:.9;margin-bottom:6px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;color:var(--muted);font-size:12px;margin-bottom:10px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot-morning{background:var(--morning)} .dot-evening{background:var(--evening)}
+.dot-night{background:var(--night)} .dot-off{background:var(--off)}
+.dot-holiday{background:var(--holiday)} .dot-sixth{background:var(--sixth)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.grid.header>div{color:var(--muted);text-align:center;padding:8px 0}
+.cell{background:var(--panel);border-radius:14px;min-height:78px;padding:10px 10px 12px;position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+.date{font-weight:800}
+.shift{margin-top:8px;padding:4px 8px;border-radius:999px;font-weight:700;font-size:12px;color:#0e141b}
+.shift.morning{background:var(--morning)} .shift.evening{background:var(--evening)} .shift.night{background:var(--night)} .shift.off{background:var(--off);color:#e3e7ee}
+.badge{position:absolute;right:8px;bottom:8px;background:var(--holiday);color:#1a1a1a;font-weight:800;padding:4px 8px;border-radius:10px;font-size:12px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today{box-shadow:0 0 0 2px var(--today) inset}
+.sixth{box-shadow:0 0 0 2px var(--sixth) inset}
+.holist{margin:12px 2px 2px;color:var(--muted);font-size:12px}
+.holist ul{margin:6px 0 0 18px;padding:0}
+.holist li{margin:2px 0}
+.foot{margin-top:14px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>교대 근무 캘린더</h1>
+      <div class="controls">
+        <button id="prev">◀ 이전달</button>
+        <button id="today" class="primary">오늘</button>
+        <button id="next">다음달 ▶</button>
+      </div>
+      <div class="row">
+        <label for="crew">근무조 선택:</label>
+        <select id="crew">
+          <option value="2">2조 (기준: 2025-08-07=오전1)</option>
+          <option value="1">1조 (오늘=심야1)</option>
+          <option value="3">3조 (임시)</option>
+          <option value="4">4조 (오늘=심야 후 휴무1)</option>
+        </select>
+      </div>
+      <div class="subtitle"><span id="title"></span> · <span id="crewInfo"></span></div>
+      <div class="legend">
+        <span class="dot dot-morning"></span> 오전(06~14)
+        <span class="dot dot-evening"></span> 오후(14~22)
+        <span class="dot dot-night"></span> 심야(22~06)
+        <span class="dot dot-off"></span> 휴무
+        <span class="dot dot-holiday"></span> 공휴일
+        <span class="dot dot-sixth"></span> 주 6번째 근무
+      </div>
+    </header>
+    <main>
+      <div class="grid header">
+        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+      </div>
+      <div class="grid" id="days"></div>
+      <div id="holist" class="holist"></div>
+    </main>
+    <footer class="foot">
+      <small>패턴: 오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴 · 기준일(2조) 2025-08-07 = 오전1</small>
+    </footer>
+  </div>
+  <script>
+var pattern=['오전1','오전2','오전3','오전4','오전5','휴','휴','심야1','심야2','심야3','심야4','심야5','휴','휴','오후1','오후2','오후3','오후4','오후5','휴'];
+var PATTERN_LEN=pattern.length;
+var BASE_DATE_2=new Date(2025,7,7);
+var CREW_OFFSETS={'2':0,'1':5,'4':10,'3':15};
+var HOL_EMBED={"2025": {"2025-01-01": "신정", "2025-01-28": "설날", "2025-01-29": "설날", "2025-01-30": "설 대체휴일", "2025-03-01": "삼일절", "2025-05-05": "어린이날", "2025-05-06": "어린이날 대체휴일", "2025-06-06": "현충일", "2025-08-15": "광복절", "2025-10-03": "개천절", "2025-10-06": "추석", "2025-10-07": "추석", "2025-10-08": "추석 대체휴일", "2025-10-09": "한글날", "2025-12-25": "성탄절"}, "2026": {"2026-01-01": "신정", "2026-02-16": "설날", "2026-02-17": "설날", "2026-02-18": "설 대체휴일", "2026-03-01": "삼일절", "2026-05-05": "어린이날", "2026-05-25": "석가탄신일", "2026-06-06": "현충일", "2026-08-15": "광복절", "2026-09-24": "추석", "2026-09-25": "추석", "2026-09-26": "추석 대체휴일", "2026-10-03": "개천절", "2026-10-09": "한글날", "2026-12-25": "성탄절"}};
+function ymd(d){var y=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),da=('0'+d.getDate()).slice(-2);return y+'-'+m+'-'+da;}
+function baseIndexOn(date){var a=new Date(date.getFullYear(),date.getMonth(),date.getDate());var diff=Math.floor((a-BASE_DATE_2)/(24*60*60*1000));return ((diff%PATTERN_LEN)+PATTERN_LEN)%PATTERN_LEN;}
+function shiftOf(date,crew){var baseIdx=baseIndexOn(date);var offset=CREW_OFFSETS[String(crew)]||0;var idx=(baseIdx+offset)%PATTERN_LEN;return pattern[idx];}
+function shiftClass(name){if(name.indexOf('오전')===0)return'morning';if(name.indexOf('오후')===0)return'evening';if(name.indexOf('심야')===0)return'night';return'off';}
+var titleEl=document.getElementById('title'),daysEl=document.getElementById('days'),holistEl=document.getElementById('holist'),crewSel=document.getElementById('crew'),crewInfoEl=document.getElementById('crewInfo');
+var view=new Date(),today=new Date();
+function crewDesc(c){if(c==='1')return'오늘 기준: 심야1';if(c==='2')return'기준일 2025-08-07 = 오전1';if(c==='3')return'임시 오프셋(+15) · 필요 시 조정';if(c==='4')return'오늘 기준: 심야 후 첫 휴무1';return'';}
+function render(){var y=view.getFullYear(),m0=view.getMonth(),m=m0+1;titleEl.textContent=y+'년 '+m+'월';crewInfoEl.textContent='선택 조: '+crewSel.value+'조 · '+crewDesc(crewSel.value);var holidays=HOL_EMBED[String(y)]||{};var first=new Date(y,m0,1);var lastDate=new Date(y,m,0).getDate();var blanks=(first.getDay()+7)%7;daysEl.innerHTML='';for(var i=0;i<blanks;i++)daysEl.appendChild(document.createElement('div'));var monthH=[];for(var d=1;d<=lastDate;d++){var date=new Date(y,m0,d);var cell=document.createElement('div');cell.className='cell';var dateSpan=document.createElement('div');dateSpan.className='date';dateSpan.textContent=d;cell.appendChild(dateSpan);var shift=shiftOf(date,crewSel.value);var shiftEl=document.createElement('div');shiftEl.className='shift '+shiftClass(shift);shiftEl.textContent=(shift.indexOf('휴')===0)?'휴무':shift;cell.appendChild(shiftEl);var key=ymd(date);if(holidays[key]){var badge=document.createElement('div');badge.className='badge';badge.textContent=holidays[key];cell.appendChild(badge);monthH.push([key,holidays[key]]);}if(ymd(date)===ymd(today))cell.classList.add('today');var dow=date.getDay(),mondayOffset=(dow+6)%7,work=0;for(var k=0;k<=mondayOffset;k++){var chk=new Date(y,m0,d-mondayOffset+k);var s=shiftOf(chk,crewSel.value);if(s.indexOf('휴')!==0)work++;}if(work===6&&shift.indexOf('휴')!==0)cell.classList.add('sixth');daysEl.appendChild(cell);}holistEl.innerHTML=monthH.length?'<b>이번 달 공휴일</b><ul>'+monthH.map(function(x){return'<li>'+x[0]+' — '+x[1]+'</li>';}).join('')+'</ul>':'';}
+document.getElementById('prev').onclick=function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();};
+document.getElementById('next').onclick=function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();};
+document.getElementById('today').onclick=function(){view=new Date();render();};
+document.getElementById('crew').onchange=function(){try{localStorage.setItem('crewSel',crewSel.value);}catch(e){}render();};
+(function(){try{var saved=localStorage.getItem('crewSel');if(saved)crewSel.value=saved;}catch(e){}})();
+render();
+  </script>
+</body>
+</html>
