@@ -4,20 +4,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>교대 캘린더+ v5</title>
+  <title>교대 캘린더+ v6</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <meta name="theme-color" content="#0b1118">
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw-v5.js'));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw-v6.js'));
     }
   </script>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>교대 캘린더+ v5 <span class="badge">오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴</span></h1>
+    <h1>교대 캘린더+ v6 <span class="badge">오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴</span></h1>
     <div class="controls">
       <button id="prev">◀ 이전달</button>
       <button id="today" class="today">오늘</button>
@@ -93,17 +93,34 @@ const dows = ['일','월','화','수','목','금','토'];
 const dowsEl = document.getElementById('dows'); dowsEl.innerHTML = dows.map(d => `<div class="dow">${d}</div>`).join('');
 
 // === 공휴일 데이터 로드 ===
+
 let KR_HOLIDAYS = {}; // {'YYYY-MM-DD': '설날'}
+const EMBED_HOLIDAYS = {
+  "2025-01-01": "신정",
+  "2025-03-01": "삼일절",
+  "2025-05-05": "어린이날",
+  "2025-06-06": "현충일",
+  "2025-08-15": "광복절",
+  "2025-10-03": "개천절",
+  "2025-10-09": "한글날",
+  "2025-12-25": "성탄절"
+};
 async function loadHolidays(){
+  // cache-busting 쿼리 추가 + 오류 시 임베드 사용
   try{
-    const r = await fetch('./holidays.json');
-    const data = await r.json();
-    KR_HOLIDAYS = data || {};
+    const r = await fetch('./holidays.json?v=6', {cache:'no-cache'});
+    if (r.ok) {
+      const data = await r.json();
+      KR_HOLIDAYS = data || EMBED_HOLIDAYS;
+    } else {
+      KR_HOLIDAYS = EMBED_HOLIDAYS;
+    }
   }catch(e){
-    KR_HOLIDAYS = {};
+    KR_HOLIDAYS = EMBED_HOLIDAYS;
   }
 }
 function isHoliday(d){ return !!KR_HOLIDAYS[ymdLocal(d)]; }
+
 
 // === 6번째 근무일 강조 ===
 // 주(월~일) 기준으로, 근무일(오/후/심)이 6일이면, 그 주의 6번째 근무일 셀에 표시

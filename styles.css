@@ -29,7 +29,8 @@ h1{font-size:20px;margin:0;letter-spacing:.2px}
 .휴{background:linear-gradient(180deg,rgba(255,118,118,.14),rgba(255,118,118,.04)); border-color:rgba(255,118,118,.35)}
 .todayCell{outline:2px solid #ffd166; outline-offset:-2px}
 .holidayMark::after{content:'공휴일'; position:absolute; left:8px; bottom:8px; font-size:11px; color:#141a22; background:var(--holiday); padding:2px 6px; border-radius:8px; font-weight:700}
-.sixthMark{box-shadow:0 0 0 2px var(--sixth) inset}
+.sixthMark{box-shadow:0 0 0 3px var(--sixth) inset, 0 0 12px rgba(0,210,255,.35) inset}
+.sixthMark::after{content:'6th'; position:absolute; right:8px; top:8px; font-size:11px; color:#0a0f16; background:var(--sixth); padding:2px 6px; border-radius:8px; font-weight:800}
 .footer{color:var(--muted);font-size:12px;margin-top:12px}
 .small{font-size:12px;color:var(--muted)}
 .note{background:#0c1826;border:1px dashed var(--border);border-radius:12px;padding:10px;margin-top:10px}
