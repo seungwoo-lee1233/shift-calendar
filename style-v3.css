@@ -1,0 +1,34 @@
+*{box-sizing:border-box}
+:root{
+  --bg:#0f1318; --panel:#151b22; --muted:#9fb0c3; --text:#e9f0f7;
+  --morning:#44c08a; --evening:#5aa2ff; --night:#b385ff; --off:#495463;
+  --holiday:#ffd166; --sixth:#4da6ff; --today:#fff;
+}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:18px}
+.top h1{margin:0 0 8px 0;font-size:22px}
+.controls{display:flex;gap:8px;margin:6px 0 10px 0}
+button{padding:10px 12px;border:1px solid #2b3440;border-radius:10px;background:#1b232c;color:var(--text);font-weight:600}
+button.primary{background:#2a84ff;border-color:#2a84ff;color:#fff}
+.subtitle{opacity:.9;margin-bottom:6px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;color:var(--muted);font-size:12px;margin-bottom:10px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot-morning{background:var(--morning)} .dot-evening{background:var(--evening)}
+.dot-night{background:var(--night)} .dot-off{background:var(--off)}
+.dot-holiday{background:var(--holiday)} .dot-sixth{background:var(--sixth)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.grid.header>div{color:var(--muted);text-align:center;padding:8px 0}
+.cell{background:var(--panel);border-radius:14px;min-height:78px;padding:10px 10px 12px;position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+.date{font-weight:800}
+.shift{margin-top:8px;padding:4px 8px;border-radius:999px;font-weight:700;font-size:12px;color:#0e141b}
+.shift.morning{background:var(--morning)}
+.shift.evening{background:var(--evening)}
+.shift.night{background:var(--night)}
+.shift.off{background:var(--off);color:#e3e7ee}
+.badge{position:absolute;right:8px;bottom:8px;background:var(--holiday);color:#1a1a1a;font-weight:800;padding:4px 8px;border-radius:10px;font-size:12px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today{box-shadow:0 0 0 2px var(--today) inset}
+.sixth{box-shadow:0 0 0 2px var(--sixth) inset}
+.holist{margin:12px 2px 2px;color:var(--muted);font-size:12px}
+.holist ul{margin:6px 0 0 18px;padding:0}
+.holist li{margin:2px 0}
+.foot{margin-top:14px;color:var(--muted);text-align:center}

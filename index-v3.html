@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교대 근무 캘린더 (최종 v3)</title>
+  <link rel="stylesheet" href="style-v3.css?v=1">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>교대 근무 캘린더</h1>
+      <div class="controls">
+        <button id="prev">◀ 이전달</button>
+        <button id="today" class="primary">오늘</button>
+        <button id="next">다음달 ▶</button>
+      </div>
+      <div class="subtitle"><span id="title"></span></div>
+      <div class="legend">
+        <span class="dot dot-morning"></span> 오전(06~14)
+        <span class="dot dot-evening"></span> 오후(14~22)
+        <span class="dot dot-night"></span> 심야(22~06)
+        <span class="dot dot-off"></span> 휴무
+        <span class="dot dot-holiday"></span> 공휴일
+        <span class="dot dot-sixth"></span> 주 6번째 근무
+      </div>
+    </header>
+    <main>
+      <div class="grid header">
+        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+      </div>
+      <div class="grid" id="days"></div>
+      <div id="holist" class="holist"></div>
+    </main>
+    <footer class="foot">
+      <small>패턴: 오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴 · 기준일 2025-08-07 = 오전1</small>
+    </footer>
+  </div>
+  <script src="app-v3.js?v=1"></script>
+</body>
+</html>
