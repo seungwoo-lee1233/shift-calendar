@@ -1,0 +1,83 @@
+// 패턴 및 기준
+const pattern = ['오전1','오전2','오전3','오전4','오전5','휴','휴','심야1','심야2','심야3','심야4','심야5','휴','휴','오후1','오후2','오후3','오후4','오후5','휴'];
+const LEN = pattern.length;
+const BASE2 = new Date(2025,7,7); // 2조 기준일: 2025-08-07 = 오전1
+const OFFSETS = {'2':0,'1':5,'4':10,'3':15}; // 1조=오늘 심야1, 4조=오늘 심야 후 휴무1, 3조=임시
+
+// 공휴일(내장 + 외부 JSON 폴백 로드)
+const HOL_EMBED = {"2025": {"2025-01-01": "신정", "2025-01-28": "설날", "2025-01-29": "설날", "2025-01-30": "설 대체휴일", "2025-03-01": "삼일절", "2025-05-05": "어린이날", "2025-05-06": "어린이날 대체휴일", "2025-06-06": "현충일", "2025-08-15": "광복절", "2025-10-03": "개천절", "2025-10-06": "추석", "2025-10-07": "추석", "2025-10-08": "추석 대체휴일", "2025-10-09": "한글날", "2025-12-25": "성탄절"}, "2026": {"2026-01-01": "신정", "2026-02-16": "설날", "2026-02-17": "설날", "2026-02-18": "설 대체휴일", "2026-03-01": "삼일절", "2026-05-05": "어린이날", "2026-05-25": "석가탄신일", "2026-06-06": "현충일", "2026-08-15": "광복절", "2026-09-24": "추석", "2026-09-25": "추석", "2026-09-26": "추석 대체휴일", "2026-10-03": "개천절", "2026-10-09": "한글날", "2026-12-25": "성탄절"}};
+async function holidaysOf(year) {
+  try {
+    const r = await fetch('./holidays-modern.json?v=1', {cache:'no-store'});
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    return j[String(year)] || (HOL_EMBED[String(year)]||{});
+  } catch { return HOL_EMBED[String(year)]||{}; }
+}
+
+const daysEl = document.getElementById('days');
+const holistEl = document.getElementById('holist');
+const subtitle = document.getElementById('subtitle');
+const tabs = document.getElementById('crewTabs');
+
+let view = new Date();
+let crew = localStorage.getItem('crewModern') || '1';
+activateTab(crew);
+
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function baseIdx(date){const a=new Date(date.getFullYear(),date.getMonth(),date.getDate());const diff=Math.floor((a-BASE2)/86400000);return ((diff%LEN)+LEN)%LEN;}
+function shiftOf(date, c){ const idx=(baseIdx(date)+(OFFSETS[c]||0))%LEN; return pattern[idx]; }
+function cls(s){ if(s.startsWith('오전'))return'm'; if(s.startsWith('오후'))return'e'; if(s.startsWith('심야'))return'n'; return 'o'; }
+
+async function render(){
+  const y=view.getFullYear(), m0=view.getMonth(), m=m0+1;
+  const today = new Date();
+  const holidays = await holidaysOf(y);
+  subtitle.textContent = y+'년 '+m+'월 · '+crew+'조';
+
+  const first=new Date(y,m0,1);
+  const last=new Date(y,m,0).getDate();
+  const blanks=(first.getDay()+7)%7;
+
+  daysEl.innerHTML='';
+  for(let i=0;i<blanks;i++) daysEl.appendChild(document.createElement('div'));
+
+  const list=[];
+
+  for(let d=1; d<=last; d++) {
+    const dt=new Date(y,m0,d);
+    const cell=document.createElement('div'); cell.className='cell';
+    const dateEl=document.createElement('div'); dateEl.className='date'; dateEl.textContent=d; cell.appendChild(dateEl);
+
+    const s=shiftOf(dt, crew);
+    const pill=document.createElement('div'); pill.className='pill '+cls(s); pill.textContent=s.startsWith('휴')?'휴무':s; cell.appendChild(pill);
+
+    const key=ymd(dt);
+    if(holidays[key]){ const b=document.createElement('div'); b.className='badge'; b.textContent=holidays[key]; cell.appendChild(b); list.push([key, holidays[key]]); }
+
+    if(ymd(dt)===ymd(today)) cell.classList.add('today');
+
+    // 주(월~일) 6번째 근무
+    const dow=dt.getDay(), monOff=(dow+6)%7; let work=0;
+    for(let k=0;k<=monOff;k++){ const chk=new Date(y,m0,d-monOff+k); const sh=shiftOf(chk, crew); if(!sh.startsWith('휴')) work++; }
+    if(work===6 && !s.startsWith('휴')) cell.classList.add('sixth');
+
+    daysEl.appendChild(cell);
+  }
+
+  holistEl.innerHTML = list.length ? '<b>이번 달 공휴일</b><ul>'+list.map(([d,n])=>`<li>${d} — ${n}</li>`).join('')+'</ul>' : '';
+}
+
+function activateTab(c){
+  crew = String(c);
+  Array.from(tabs.querySelectorAll('.tab')).forEach(t=>t.classList.toggle('active', t.dataset.crew===crew));
+  localStorage.setItem('crewModern', crew);
+  render();
+}
+
+document.getElementById('prev').onclick=()=>{ view=new Date(view.getFullYear(),view.getMonth()-1,1); render(); };
+document.getElementById('next').onclick=()=>{ view=new Date(view.getFullYear(),view.getMonth()+1,1); render(); };
+document.getElementById('today').onclick=()=>{ view=new Date(); render(); };
+tabs.addEventListener('click', (e)=>{ const b=e.target.closest('.tab'); if(b) activateTab(b.dataset.crew); });
+
+render();

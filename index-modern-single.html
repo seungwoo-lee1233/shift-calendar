@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>교대 근무 캘린더 (Modern·단일파일)</title>
+<style>*{box-sizing:border-box}
+:root{
+  --bg:#0D1117; --panel:#161B22; --soft:#0E1621; --text:#E6EDF3; --muted:#9FB0C3;
+  --primary:#2F81F7; --outline:#30435A;
+  --morning:#46C08C; --evening:#60A5FA; --night:#B78CFF; --off:#4B5563;
+  --holiday:#FFD166; --sixth:#4DA6FF; --today:#FFFFFF;
+}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.title{font-weight:800;font-size:20px}
+.monthnav{display:flex;gap:8px}
+.btn{padding:10px 12px;border:1px solid var(--outline);border-radius:12px;background:var(--panel);color:var(--text);font-weight:700}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.tabs{display:flex;gap:8px;background:var(--soft);border:1px solid var(--outline);padding:6px;border-radius:12px;position:sticky;top:0}
+.tab{flex:1;text-align:center;padding:10px 0;border-radius:10px;font-weight:800;background:transparent}
+.tab.active{background:var(--primary);color:#fff}
+.sub{display:flex;justify-content:space-between;align-items:center;margin:10px 0;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot-m{background:var(--morning)} .dot-e{background:var(--evening)} .dot-n{background:var(--night)}
+.dot-o{background:var(--off)} .dot-h{background:var(--holiday)} .dot-6{background:var(--sixth)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.grid.header>div{color:var(--muted);text-align:center;padding:8px 0}
+.cell{background:var(--panel);border-radius:14px;min-height:88px;padding:12px;position:relative;display:flex;flex-direction:column;gap:6px}
+.date{font-weight:900}
+.pill{align-self:flex-start;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;color:#0F141B}
+.pill.m{background:var(--morning)} .pill.e{background:var(--evening)} .pill.n{background:var(--night)} .pill.o{background:var(--off);color:#E5E7EB}
+.badge{position:absolute;right:10px;bottom:10px;background:var(--holiday);color:#1a1a1a;padding:4px 8px;border-radius:10px;font-weight:800;font-size:12px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today{box-shadow:0 0 0 2px var(--today) inset}
+.sixth{box-shadow:0 0 0 2px var(--sixth) inset}
+.holist{margin-top:12px;color:var(--muted);font-size:12px}
+.holist ul{margin:6px 0 0 18px;padding:0}
+.foot{margin-top:14px;color:var(--muted);text-align:center;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">교대 근무 캘린더</div>
+    <div class="monthnav">
+      <button class="btn" id="prev">◀</button>
+      <button class="btn primary" id="today">오늘</button>
+      <button class="btn" id="next">▶</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="crewTabs">
+    <button class="tab active" data-crew="1">1조</button>
+    <button class="tab" data-crew="2">2조</button>
+    <button class="tab" data-crew="3">3조</button>
+    <button class="tab" data-crew="4">4조</button>
+  </div>
+
+  <div class="sub">
+    <div id="subtitle"></div>
+    <div class="legend">
+      <span><i class="dot dot-m"></i>오전</span>
+      <span><i class="dot dot-e"></i>오후</span>
+      <span><i class="dot dot-n"></i>심야</span>
+      <span><i class="dot dot-o"></i>휴무</span>
+      <span><i class="dot dot-h"></i>공휴일</span>
+      <span><i class="dot dot-6"></i>주6번째 근무</span>
+    </div>
+  </div>
+
+  <div class="grid header">
+    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+  </div>
+  <div class="grid" id="days"></div>
+
+  <div id="holist" class="holist"></div>
+  <div class="foot">패턴: 오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴 · 기준(2조) 2025-08-07 = 오전1</div>
+</div>
+
+<script>
+// 패턴 및 기준
+const pattern = ['오전1','오전2','오전3','오전4','오전5','휴','휴','심야1','심야2','심야3','심야4','심야5','휴','휴','오후1','오후2','오후3','오후4','오후5','휴'];
+const LEN = pattern.length;
+const BASE2 = new Date(2025,7,7); // 2조 기준일: 2025-08-07 = 오전1
+const OFFSETS = {'2':0,'1':5,'4':10,'3':15}; // 1조=오늘 심야1, 4조=오늘 심야 후 휴무1, 3조=임시
+
+// 공휴일(내장 + 외부 JSON 폴백 로드)
+const HOL_EMBED = {"2025": {"2025-01-01": "신정", "2025-01-28": "설날", "2025-01-29": "설날", "2025-01-30": "설 대체휴일", "2025-03-01": "삼일절", "2025-05-05": "어린이날", "2025-05-06": "어린이날 대체휴일", "2025-06-06": "현충일", "2025-08-15": "광복절", "2025-10-03": "개천절", "2025-10-06": "추석", "2025-10-07": "추석", "2025-10-08": "추석 대체휴일", "2025-10-09": "한글날", "2025-12-25": "성탄절"}, "2026": {"2026-01-01": "신정", "2026-02-16": "설날", "2026-02-17": "설날", "2026-02-18": "설 대체휴일", "2026-03-01": "삼일절", "2026-05-05": "어린이날", "2026-05-25": "석가탄신일", "2026-06-06": "현충일", "2026-08-15": "광복절", "2026-09-24": "추석", "2026-09-25": "추석", "2026-09-26": "추석 대체휴일", "2026-10-03": "개천절", "2026-10-09": "한글날", "2026-12-25": "성탄절"}};
+async function holidaysOf(year) {
+  try {
+    const r = await fetch('./holidays-modern.json?v=1', {cache:'no-store'});
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    return j[String(year)] || (HOL_EMBED[String(year)]||{});
+  } catch { return HOL_EMBED[String(year)]||{}; }
+}
+
+const daysEl = document.getElementById('days');
+const holistEl = document.getElementById('holist');
+const subtitle = document.getElementById('subtitle');
+const tabs = document.getElementById('crewTabs');
+
+let view = new Date();
+let crew = localStorage.getItem('crewModern') || '1';
+activateTab(crew);
+
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function baseIdx(date){const a=new Date(date.getFullYear(),date.getMonth(),date.getDate());const diff=Math.floor((a-BASE2)/86400000);return ((diff%LEN)+LEN)%LEN;}
+function shiftOf(date, c){ const idx=(baseIdx(date)+(OFFSETS[c]||0))%LEN; return pattern[idx]; }
+function cls(s){ if(s.startsWith('오전'))return'm'; if(s.startsWith('오후'))return'e'; if(s.startsWith('심야'))return'n'; return 'o'; }
+
+async function render(){
+  const y=view.getFullYear(), m0=view.getMonth(), m=m0+1;
+  const today = new Date();
+  const holidays = await holidaysOf(y);
+  subtitle.textContent = y+'년 '+m+'월 · '+crew+'조';
+
+  const first=new Date(y,m0,1);
+  const last=new Date(y,m,0).getDate();
+  const blanks=(first.getDay()+7)%7;
+
+  daysEl.innerHTML='';
+  for(let i=0;i<blanks;i++) daysEl.appendChild(document.createElement('div'));
+
+  const list=[];
+
+  for(let d=1; d<=last; d++) {
+    const dt=new Date(y,m0,d);
+    const cell=document.createElement('div'); cell.className='cell';
+    const dateEl=document.createElement('div'); dateEl.className='date'; dateEl.textContent=d; cell.appendChild(dateEl);
+
+    const s=shiftOf(dt, crew);
+    const pill=document.createElement('div'); pill.className='pill '+cls(s); pill.textContent=s.startsWith('휴')?'휴무':s; cell.appendChild(pill);
+
+    const key=ymd(dt);
+    if(holidays[key]){ const b=document.createElement('div'); b.className='badge'; b.textContent=holidays[key]; cell.appendChild(b); list.push([key, holidays[key]]); }
+
+    if(ymd(dt)===ymd(today)) cell.classList.add('today');
+
+    // 주(월~일) 6번째 근무
+    const dow=dt.getDay(), monOff=(dow+6)%7; let work=0;
+    for(let k=0;k<=monOff;k++){ const chk=new Date(y,m0,d-monOff+k); const sh=shiftOf(chk, crew); if(!sh.startsWith('휴')) work++; }
+    if(work===6 && !s.startsWith('휴')) cell.classList.add('sixth');
+
+    daysEl.appendChild(cell);
+  }
+
+  holistEl.innerHTML = list.length ? '<b>이번 달 공휴일</b><ul>'+list.map(([d,n])=>`<li>${d} — ${n}</li>`).join('')+'</ul>' : '';
+}
+
+function activateTab(c){
+  crew = String(c);
+  Array.from(tabs.querySelectorAll('.tab')).forEach(t=>t.classList.toggle('active', t.dataset.crew===crew));
+  localStorage.setItem('crewModern', crew);
+  render();
+}
+
+document.getElementById('prev').onclick=()=>{ view=new Date(view.getFullYear(),view.getMonth()-1,1); render(); };
+document.getElementById('next').onclick=()=>{ view=new Date(view.getFullYear(),view.getMonth()+1,1); render(); };
+document.getElementById('today').onclick=()=>{ view=new Date(); render(); };
+tabs.addEventListener('click', (e)=>{ const b=e.target.closest('.tab'); if(b) activateTab(b.dataset.crew); });
+
+render();
+
+</script>
+</body>
+</html>
