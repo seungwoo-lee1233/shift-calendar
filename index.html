@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교대 근무 캘린더</title>
+<style>*{box-sizing:border-box}
+:root{
+  --bg:#0D1117; --panel:#161B22; --soft:#0E1621; --text:#E6EDF3; --muted:#9FB0C3;
+  --primary:#2F81F7; --outline:#30435A;
+  --morning:#46C08C; --evening:#60A5FA; --night:#B78CFF; --off:#4B5563;
+  --holiday:#FFD166; --sixth:#4DA6FF; --today:#FFFFFF; --accent:#22C55E;
+}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;overflow-x:hidden}
+.wrap{max-width:760px;width:100%;margin:0 auto;padding:12px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.title{font-weight:800;font-size:18px}
+.monthnav{display:flex;gap:8px;flex:0 0 auto}
+.btn{padding:9px 11px;border:1px solid var(--outline);border-radius:12px;background:var(--panel);color:var(--text);font-weight:700}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 10px;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--soft);border:1px solid var(--outline);padding:6px;border-radius:12px;position:sticky;top:0;margin-bottom:6px;z-index:5}
+.tab{padding:10px 0;border-radius:10px;font-weight:800;background:transparent;text-align:center}
+.tab.active{background:var(--primary);color:#fff}
+.sub{display:flex;justify-content:space-between;align-items:center;margin:6px 0;color:var(--muted);gap:8px;flex-wrap:wrap}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot-m{background:var(--morning)} .dot-e{background:var(--evening)} .dot-n{background:var(--night)}
+.dot-o{background:var(--off)} .dot-h{background:var(--holiday)} .dot-6{background:var(--sixth)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));column-gap:8px;row-gap:10px;width:100%}
+.grid.header>div{color:var(--muted);text-align:center;padding:6px 0}
+.cell{background:var(--panel);border-radius:14px;min-height:78px;padding:10px;position:relative;display:flex;flex-direction:column;gap:6px;overflow:hidden;cursor:pointer}
+.date{font-weight:900}
+.pill{align-self:flex-start;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:800;color:#0F141B;line-height:1}
+.pill.m{background:var(--morning)} .pill.e{background:var(--evening)} .pill.n{background:var(--night)} .pill.o{background:var(--off);color:#E5E7EB}
+.badge{position:absolute;right:8px;bottom:8px;background:var(--holiday);color:#1a1a1a;padding:3px 7px;border-radius:10px;font-weight:800;font-size:12px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today{box-shadow:0 0 0 2px var(--today) inset}
+.sixth{box-shadow:0 0 0 2px var(--sixth) inset}
+.memo-dot{position:absolute;left:8px;bottom:8px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.holist{margin-top:10px;color:var(--muted);font-size:12px}
+.holist ul{margin:6px 0 0 18px;padding:0}
+.foot{margin-top:12px;color:var(--muted);text-align:center;font-size:12px}
+@media (max-width:420px){
+  .wrap{padding:10px}
+  .grid{column-gap:6px;row-gap:8px}
+  .cell{min-height:68px;padding:9px}
+  .title{font-size:17px}
+}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">교대 근무 캘린더</div>
+    <div class="row">
+      <button class="btn" id="prev">◀</button>
+      <button class="btn primary" id="today">오늘</button>
+      <button class="btn" id="next">▶</button>
+      <button class="btn ghost small" id="backup">메모 백업</button>
+      <button class="btn ghost small" id="restore">불러오기</button>
+      <input type="file" id="file" accept="application/json" style="display:none">
+    </div>
+  </div>
+
+  <div class="tabs" id="crewTabs">
+    <button class="tab active" data-crew="1">1조</button>
+    <button class="tab" data-crew="2">2조</button>
+    <button class="tab" data-crew="3">3조</button>
+    <button class="tab" data-crew="4">4조</button>
+  </div>
+
+  <div class="sub">
+    <div id="subtitle"></div>
+    <div class="legend">
+      <span><i class="dot dot-m"></i>오전</span>
+      <span><i class="dot dot-e"></i>오후</span>
+      <span><i class="dot dot-n"></i>심야</span>
+      <span><i class="dot dot-o"></i>휴무</span>
+      <span><i class="dot dot-h"></i>공휴일</span>
+      <span><i class="dot dot-6"></i>주6번째 근무</span>
+    </div>
+  </div>
+
+  <div class="grid header">
+    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+  </div>
+  <div class="grid" id="days"></div>
+
+  <div id="holist" class="holist"></div>
+  <div class="foot">메모는 이 기기 로컬에만 저장됩니다(백업/복원 지원). · 패턴: 오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴 · 기준(2조) 2025-08-07 = 오전1</div>
+</div>
+
+<!-- Memo bottom sheet -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3 id="memoTitle">메모</h3>
+    <textarea id="memoText" placeholder="이 날짜에 남길 메모를 입력하세요."></textarea>
+    <div class="row">
+      <button class="btn ghost" id="del">삭제</button>
+      <div class="right">
+        <button class="btn" id="close">닫기</button>
+        <button class="btn primary" id="save">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const pattern=['오전1','오전2','오전3','오전4','오전5','휴','휴','심야1','심야2','심야3','심야4','심야5','휴','휴','오후1','오후2','오후3','오후4','오후5','휴'];
+const LEN=pattern.length;
+const BASE2=new Date(2025,7,7);
+const OFFSETS={'2':0,'1':5,'4':10,'3':15};
+const HOL={"2025": {"2025-01-01": "신정", "2025-01-28": "설날", "2025-01-29": "설날", "2025-01-30": "설 대체휴일", "2025-03-01": "삼일절", "2025-05-05": "어린이날", "2025-05-06": "어린이날 대체휴일", "2025-06-06": "현충일", "2025-08-15": "광복절", "2025-10-03": "개천절", "2025-10-06": "추석", "2025-10-07": "추석", "2025-10-08": "추석 대체휴일", "2025-10-09": "한글날", "2025-12-25": "성탄절"}, "2026": {"2026-01-01": "신정", "2026-02-16": "설날", "2026-02-17": "설날", "2026-02-18": "설 대체휴일", "2026-03-01": "삼일절", "2026-05-05": "어린이날", "2026-05-25": "석가탄신일", "2026-06-06": "현충일", "2026-08-15": "광복절", "2026-09-24": "추석", "2026-09-25": "추석", "2026-09-26": "추석 대체휴일", "2026-10-03": "개천절", "2026-10-09": "한글날", "2026-12-25": "성탄절"}};
+
+const daysEl=document.getElementById('days'), holistEl=document.getElementById('holist'), subtitle=document.getElementById('subtitle'), tabs=document.getElementById('crewTabs');
+let view=new Date(); let crew=localStorage.getItem('crewModern')||'1'; activateTab(crew);
+
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function baseIdx(date){const a=new Date(date.getFullYear(),date.getMonth(),date.getDate());const diff=Math.floor((a-BASE2)/86400000);return ((diff%LEN)+LEN)%LEN;}
+function shiftOf(date,c){const idx=(baseIdx(date)+(OFFSETS[c]||0))%LEN;return pattern[idx];}
+function cls(s){if(s.startsWith('오전'))return'm';if(s.startsWith('오후'))return'e';if(s.startsWith('심야'))return'n';return'o';}
+function activateTab(c){crew=String(c);Array.from(tabs.querySelectorAll('.tab')).forEach(t=>t.classList.toggle('active',t.dataset.crew===crew));try{localStorage.setItem('crewModern',crew);}catch(e){} render();}
+document.getElementById('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render();};
+document.getElementById('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render();};
+document.getElementById('today').onclick=()=>{view=new Date();render();};
+tabs.addEventListener('click',e=>{const b=e.target.closest('.tab'); if(b) activateTab(b.dataset.crew);});
+
+// === Memo store helpers ===
+function memoKey(date){return 'memo:'+crew+':'+date;}
+function loadMemo(date){try{return localStorage.getItem(memoKey(date))||'';}catch(e){return ''}}
+function saveMemo(date, text){try{if(text) localStorage.setItem(memoKey(date), text); else localStorage.removeItem(memoKey(date));}catch(e){}}
+function hasMemo(date){try{return !!localStorage.getItem(memoKey(date));}catch(e){return false}}
+
+// Export / Import
+document.getElementById('backup').onclick=()=>{
+  try{const res={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('memo:')) res[k]=localStorage.getItem(k);}
+    const blob=new Blob([JSON.stringify(res,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='shift-memos.json'; a.click(); URL.revokeObjectURL(url);
+  }catch(e){ alert('백업에 실패했습니다.'); }
+};
+document.getElementById('restore').onclick=()=>document.getElementById('file').click();
+document.getElementById('file').addEventListener('change',(ev)=>{
+  const f=ev.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{ try{ const obj=JSON.parse(reader.result);
+      Object.keys(obj).forEach(k=>{ if(k.startsWith('memo:')) localStorage.setItem(k,obj[k]); });
+      alert('불러오기 완료'); render();
+    }catch(e){ alert('JSON 형식이 올바르지 않습니다.'); }
+  }; reader.readAsText(f);
+});
+
+// Modal interactions
+const modal=document.getElementById('modal');
+const memoText=document.getElementById('memoText');
+const memoTitle=document.getElementById('memoTitle');
+let currentDateKey=null;
+document.getElementById('close').onclick=()=>modal.style.display='none';
+document.getElementById('save').onclick=()=>{ if(currentDateKey){ saveMemo(currentDateKey, memoText.value.trim()); modal.style.display='none'; render(); } };
+document.getElementById('del').onclick=()=>{ if(currentDateKey){ saveMemo(currentDateKey, ''); memoText.value=''; modal.style.display='none'; render(); } };
+function openMemo(dateStr){ currentDateKey=dateStr; memoTitle.textContent='메모 · '+dateStr+' · '+crew+'조'; memoText.value=loadMemo(dateStr); modal.style.display='flex'; }
+
+// Render calendar
+function render(){ const y=view.getFullYear(), m0=view.getMonth(), m=m0+1;
+  const today=new Date(); const holidays=HOL[String(y)]||{};
+  subtitle.textContent=y+'년 '+m+'월 · '+crew+'조';
+  const first=new Date(y,m0,1); const last=new Date(y,m,0).getDate(); const blanks=(first.getDay()+7)%7;
+  daysEl.innerHTML=''; for(let i=0;i<blanks;i++) daysEl.appendChild(document.createElement('div'));
+  const list=[];
+  for(let d=1; d<=last; d++){ const dt=new Date(y,m0,d); const key=ymd(dt);
+    const cell=document.createElement('div'); cell.className='cell'; cell.dataset.date=key;
+    const dateEl=document.createElement('div'); dateEl.className='date'; dateEl.textContent=d; cell.appendChild(dateEl);
+    const s=shiftOf(dt,crew); const pill=document.createElement('div'); pill.className='pill '+cls(s); pill.textContent=s.startsWith('휴')?'휴무':s; cell.appendChild(pill);
+    if(holidays[key]){ const b=document.createElement('div'); b.className='badge'; b.textContent=holidays[key]; cell.appendChild(b); list.push([key, holidays[key]]); }
+    if(ymd(dt)===ymd(today)) cell.classList.add('today');
+    const dow=dt.getDay(), monOff=(dow+6)%7; let work=0; for(let k=0;k<=monOff;k++){ const chk=new Date(y,m0,d-monOff+k); const sh=shiftOf(chk,crew); if(!sh.startsWith('휴')) work++; }
+    if(work===6 && !s.startsWith('휴')) cell.classList.add('sixth');
+    if(hasMemo(key)){ const mDot=document.createElement('div'); mDot.className='memo-dot'; cell.appendChild(mDot); }
+    cell.addEventListener('click',()=>openMemo(key));
+    daysEl.appendChild(cell);
+  }
+  holistEl.innerHTML = list.length ? '<b>이번 달 공휴일</b><ul>'+list.map(([d,n])=>`<li>${d} — ${n}</li>`).join('')+'</ul>' : '';
+}
+render();
+</script>
+
+<style>
+/* Modal styles appended last to ensure presence */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{background:var(--panel);border-top-left-radius:16px;border-top-right-radius:16px;width:100%;max-width:760px;padding:14px;border:1px solid var(--outline)}
+.sheet h3{margin:0 0 8px 0}
+textarea{width:100%;min-height:120px;background:var(--soft);color:var(--text);border:1px solid var(--outline);border-radius:10px;padding:10px;font-size:14px}
+.sheet .row{justify-content:space-between;margin-top:10px}
+.right{margin-left:auto}
+</style>
+
+</body>
+</html>
