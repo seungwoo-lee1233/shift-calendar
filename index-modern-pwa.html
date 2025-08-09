@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>교대 근무 캘린더 (PWA)</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2F81F7">
+<link rel="stylesheet" href="style-modern.css?v=1">
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">교대 근무 캘린더</div>
+    <div class="monthnav">
+      <button class="btn" id="prev">◀</button>
+      <button class="btn primary" id="today">오늘</button>
+      <button class="btn" id="next">▶</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="crewTabs">
+    <button class="tab active" data-crew="1">1조</button>
+    <button class="tab" data-crew="2">2조</button>
+    <button class="tab" data-crew="3">3조</button>
+    <button class="tab" data-crew="4">4조</button>
+  </div>
+
+  <div class="sub">
+    <div id="subtitle"></div>
+    <div class="legend">
+      <span><i class="dot dot-m"></i>오전</span>
+      <span><i class="dot dot-e"></i>오후</span>
+      <span><i class="dot dot-n"></i>심야</span>
+      <span><i class="dot dot-o"></i>휴무</span>
+      <span><i class="dot dot-h"></i>공휴일</span>
+      <span><i class="dot dot-6"></i>주6번째 근무</span>
+    </div>
+  </div>
+
+  <div class="grid header">
+    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+  </div>
+  <div class="grid" id="days"></div>
+
+  <div id="holist" class="holist"></div>
+  <div class="foot">패턴: 오전5 · 2휴 · 심야5 · 2휴 · 오후5 · 1휴 · 기준(2조) 2025-08-07 = 오전1</div>
+</div>
+
+<script src="app-modern.js?v=1"></script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw-pwa-v1.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
